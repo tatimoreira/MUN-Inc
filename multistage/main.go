@@ -16,9 +16,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+const (
+	hosts      = "muninc_mongodb_1:27017"
+	database   = "db"
+	username   = ""
+	password   = ""
+	collection = "jobs"
+)
+
 //Account is the representation of the graphql data model for the account
 type Customer struct {
-	ID       string `json:"id,omitempty"`
+	id       string `json:"id,omitempty"`
 	Name     string `json:"name"`
 	Lastname string `json:"lastName"`
 	email    string `json:"email"`
@@ -132,6 +140,54 @@ func main() {
 
 					return results, nil
 
+				},
+			},
+			"customer": &graphql.Field{
+				Type: customerType,
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+
+					var customer Customer
+					customer.id = params.Args["id"].(string)
+					err = customerCollection.FindOne(ctx, customer.id).Decode(&customer)
+					if err != nil {
+						return "", fmt.Errorf("updateTask: couldn't decode task from db: %v", err)
+					}
+					fmt.Println("old task:", customer)
+					return customer, nil
+
+					/*var customer Customer
+					var coll *mongo.Collection
+					var id primitive.ObjectID*/
+					/*customer.id = params.Args["id"].(string)
+					idDoc := bson.D{{"_id", customer.id}}
+
+					err := customerCollection.FindOne(ctx, idDoc).Decode(&customer)
+					if err != nil {
+						return err, nil
+					}
+					fmt.Println("result AFTER:", customer.id)
+					fmt.Println("err:", err)
+					return customer, nil*/
+
+					// find the document for which the _id field matches id
+					// specify the Sort option to sort the documents by age
+					// the first document in the sorted order will be returned
+					/*opts := customerCollection.FindOne()
+					var result bson.M
+					err := coll.FindOne(context.TODO(), bson.D{{"_id", id}}, opts).Decode(&result)
+					if err != nil {
+						// ErrNoDocuments means that the filter did not match any documents in the collection
+						if err == mongo.ErrNoDocuments {
+							return
+						}
+						log.Fatal(err)
+					}
+					fmt.Printf("found document %v", result)*/
 				},
 			},
 		},
